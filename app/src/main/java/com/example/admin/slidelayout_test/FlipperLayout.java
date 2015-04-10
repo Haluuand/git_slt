@@ -2,14 +2,17 @@ package com.example.admin.slidelayout_test;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.Scroller;
 
-public class FlipperLayout extends ViewGroup {
+public class FlipperLayout extends FrameLayout {
 
     private Scroller mScroller;
     private VelocityTracker mVelocityTracker;
@@ -90,21 +93,30 @@ public class FlipperLayout extends ViewGroup {
         addView(currentTopView);
         /** 默认将最上层的view滑动的边缘（用于查看上一页） */
         currentTopView.scrollTo(-screenWidth, 0);
+        currentTopView.setTranslationX(-screenWidth);
     }
 
-    @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        for (int i = 0; i < getChildCount(); i++) {
-            System.out.println("on layout :" + i);
-            View child = getChildAt(i);
-            int height = child.getMeasuredHeight();
-            int width = child.getMeasuredWidth();
-            child.layout(0, 0, width, height);
-        }
-    }
 
+//    @Override
+//    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+//        for (int i = 0; i < getChildCount(); i++) {
+////            System.out.println("on layout :" + i);
+//            View child = getChildAt(i);
+//            int height = child.getMeasuredHeight();
+//            int width = child.getMeasuredWidth();
+//
+////            System.out.printf("onlayout child %d  width = %s, height = %s.",i,width,height);
+////            System.out.println();
+//
+//            child.layout(0, 0, width, height);
+//        }
+//    }
+//
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+
+//        System.out.printf("onmeasure widthmeasurespec = %s,and heightmeasurespec = %s.",widthMeasureSpec,heightMeasureSpec);
+//        System.out.println();
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
@@ -136,44 +148,44 @@ public class FlipperLayout extends ViewGroup {
         switch (event.getAction()) {
             case MotionEvent.ACTION_MOVE:
                 if (!mScroller.isFinished()) {
-                    System.out.println("ontouchevent show mscroller is scrolling.");
+//                    System.out.println("ontouchevent show mscroller is scrolling.");
 
                     return super.onTouchEvent(event);
                 }
-                System.out.println("ontouchevent show mscroller is finished.");
+//                System.out.println("ontouchevent show mscroller is finished.");
                 if (startX == 0) {
-                    System.out.println("i think here was not used,and answer is YES!");
+//                    System.out.println("i think here was not used,and answer is YES!");
                     startX = (int) event.getX();
                 }
                 final int distance = startX - (int) event.getX();
-                System.out.println("first we decide the direction");
+//                System.out.println("first we decide the direction");
                 if (mDirection == MOVE_NO_RESULT) {
                     if (mListener.whetherHasNextPage() && distance > 0) {
                         mDirection = MOVE_TO_LEFT;
-                        System.out.println("mdirection is move_to_left");
+//                        System.out.println("mdirection is move_to_left");
                     } else if (mListener.whetherHasPreviousPage() && distance < 0) {
                         mDirection = MOVE_TO_RIGHT;
-                        System.out.println("mdirection is move_to_right");
+//                        System.out.println("mdirection is move_to_right");
                     }
                 }
 
-                System.out.println("and then is the mode.");
+//                System.out.println("and then is the mode.");
                 if (mMode == MODE_NONE
                         && ((mDirection == MOVE_TO_LEFT && mListener.whetherHasNextPage()) || (mDirection == MOVE_TO_RIGHT && mListener
                         .whetherHasPreviousPage()))) {
                     mMode = MODE_MOVE;
-                    System.out.println("mode is mode_move");
+//                    System.out.println("mode is mode_move");
                 }
 
                 if (mMode == MODE_MOVE) {
                     if ((mDirection == MOVE_TO_LEFT && distance <= 0) || (mDirection == MOVE_TO_RIGHT && distance >= 0)) {
                         mMode = MODE_NONE;
-                        System.out.println("mode is mode_none");
+//                        System.out.println("mode is mode_none");
                     }
                 }
 
                 if (mDirection != MOVE_NO_RESULT) {
-                    System.out.println("here we decide which view to scroll");
+//                    System.out.println("here we decide which view to scroll");
                     if (mDirection == MOVE_TO_LEFT) {
                         if (mScrollerView != currentShowView) {
                             mScrollerView = currentShowView;
@@ -184,20 +196,20 @@ public class FlipperLayout extends ViewGroup {
                         }
                     }
                     if (mMode == MODE_MOVE) {
-                        System.out.println("mode is mode_move,so move!");
+//                        System.out.println("mode is mode_move,so move!");
                         mVelocityTracker.computeCurrentVelocity(1000, ViewConfiguration.getMaximumFlingVelocity());
                         if (mDirection == MOVE_TO_LEFT) {
-                            mScrollerView.scrollTo(distance, 0);
+                            mScrollerView.setTranslationX(distance);
                         } else {
-                            mScrollerView.scrollTo(screenWidth + distance, 0);
+                            mScrollerView.setTranslationX(screenWidth + distance);
                         }
                     } else {
-                        System.out.println("so when mode is not mode_move? and what will we do?");
+//                        System.out.println("so when mode is not mode_move? and what will we do?");
                         final int scrollX = mScrollerView.getScrollX();
                         if (mDirection == MOVE_TO_LEFT && scrollX != 0 && mListener.whetherHasNextPage()) {
-                            mScrollerView.scrollTo(0, 0);
+                            mScrollerView.setTranslationX(0);
                         } else if (mDirection == MOVE_TO_RIGHT && mListener.whetherHasPreviousPage() && screenWidth != Math.abs(scrollX)) {
-                            mScrollerView.scrollTo(-screenWidth, 0);
+                            mScrollerView.setTranslationX(-screenWidth);
                         }
 
                     }
@@ -206,10 +218,12 @@ public class FlipperLayout extends ViewGroup {
                 break;
 
             case MotionEvent.ACTION_UP:
+                Log.i("mandy" ,"action_up :" + mScrollerView);
                 if (mScrollerView == null) {
                     return super.onTouchEvent(event);
                 }
                 final int scrollX = mScrollerView.getScrollX();
+                Log.i("mandy" ,"scrollX :" + scrollX);
                 mVelocityValue = (int) mVelocityTracker.getXVelocity();
                 // scroll左正，右负(),(startX + dx)的值如果为0，即复位
             /*
@@ -267,14 +281,14 @@ public class FlipperLayout extends ViewGroup {
     @Override
     public void computeScroll() {
 
-        System.out.println("here computescroll is start.");
+//        System.out.println("here computescroll is start.");
 
         super.computeScroll();
         if (mScroller.computeScrollOffset()) {
             mScrollerView.scrollTo(mScroller.getCurrX(), mScroller.getCurrY());
             postInvalidate();
         } else if (mScroller.isFinished() && mListener != null && mTouchResult != MOVE_NO_RESULT) {
-            System.out.println("and here computescroll was finished.");
+//            System.out.println("and here computescroll was finished.");
 
             if (mTouchResult == MOVE_TO_LEFT) {
                 if (currentTopView != null) {
@@ -294,6 +308,7 @@ public class FlipperLayout extends ViewGroup {
                     addView(currentBottomView, 0);
                 }
             } else {
+                Log.v("mandy","move to right");
                 if (currentBottomView != null) {
                     removeView(currentBottomView);
                 }
@@ -308,6 +323,7 @@ public class FlipperLayout extends ViewGroup {
                     final View newView = mListener.createView(mTouchResult);
 //                    currentTopView = new View(getContext());
                     currentTopView = newView;
+                    Log.i("mandy" ,"currentView :" + newView);
                     currentTopView.scrollTo(-screenWidth, 0);
 //                    currentTopView.setVisibility(View.GONE);
                     addView(currentTopView);
