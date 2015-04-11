@@ -12,7 +12,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Scroller;
 
-public class FlipperLayout extends FrameLayout {
+public class FlipperLayout extends ViewGroup {
 
     private Scroller mScroller;
     private VelocityTracker mVelocityTracker;
@@ -20,25 +20,27 @@ public class FlipperLayout extends FrameLayout {
     private int mVelocityValue = 0;
 
     /** 商定这个滑动是否有效的距离 */
-    private int limitDistance = 0;
+    private int limitDistance = 20;
 
     private int screenWidth = 0;
+    private int leftline = 0;
+    private int rightline = 0;
 
     /** 手指移动的方向 */
-    private static final int MOVE_TO_LEFT = 0;
-    private static final int MOVE_TO_RIGHT = 1;
-    private static final int MOVE_NO_RESULT = 2;
+    private static final String MOVE_TO_LEFT = "MOVE_TO_LEFT";
+    private static final String MOVE_TO_RIGHT = "MOVE_TO_RIGHT";
+    private static final String MOVE_NO_RESULT = "MOVE_NO_RESULT";
 
     /** 最后触摸的结果方向 */
-    private int mTouchResult = MOVE_NO_RESULT;
+    private String mTouchResult = MOVE_NO_RESULT;
     /** 一开始的方向 */
-    private int mDirection = MOVE_NO_RESULT;
+    private String mDirection = MOVE_NO_RESULT;
 
     /** 触摸的模式 */
-    private static final int MODE_NONE = 0;
-    private static final int MODE_MOVE = 1;
+    private static final String MODE_NONE = "MODE_NONE";
+    private static final String MODE_MOVE = "MODE_MOVE";
 
-    private int mMode = MODE_NONE;
+    private String mMode = MODE_NONE;
 
     /** 滑动的view */
     private View mScrollerView = null;
@@ -70,7 +72,8 @@ public class FlipperLayout extends FrameLayout {
     private void init(Context context) {
         mScroller = new Scroller(context);
         screenWidth = context.getResources().getDisplayMetrics().widthPixels;
-        limitDistance = screenWidth / 3;
+        leftline = screenWidth/3;
+        rightline = screenWidth/3*2;
     }
 
     /***
@@ -92,31 +95,25 @@ public class FlipperLayout extends FrameLayout {
         addView(currentShowView);
         addView(currentTopView);
         /** 默认将最上层的view滑动的边缘（用于查看上一页） */
-        currentTopView.scrollTo(-screenWidth, 0);
         currentTopView.setTranslationX(-screenWidth);
     }
 
 
-//    @Override
-//    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-//        for (int i = 0; i < getChildCount(); i++) {
-////            System.out.println("on layout :" + i);
-//            View child = getChildAt(i);
-//            int height = child.getMeasuredHeight();
-//            int width = child.getMeasuredWidth();
-//
-////            System.out.printf("onlayout child %d  width = %s, height = %s.",i,width,height);
-////            System.out.println();
-//
-//            child.layout(0, 0, width, height);
-//        }
-//    }
-//
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        for (int i = 0; i < getChildCount(); i++) {
+            View child = getChildAt(i);
+            int height = child.getMeasuredHeight();
+            int width = child.getMeasuredWidth();
+
+            child.layout(0, 0, width, height);
+        }
+    }
+
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 
-//        System.out.printf("onmeasure widthmeasurespec = %s,and heightmeasurespec = %s.",widthMeasureSpec,heightMeasureSpec);
-//        System.out.println();
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
@@ -148,44 +145,34 @@ public class FlipperLayout extends FrameLayout {
         switch (event.getAction()) {
             case MotionEvent.ACTION_MOVE:
                 if (!mScroller.isFinished()) {
-//                    System.out.println("ontouchevent show mscroller is scrolling.");
-
                     return super.onTouchEvent(event);
                 }
-//                System.out.println("ontouchevent show mscroller is finished.");
                 if (startX == 0) {
-//                    System.out.println("i think here was not used,and answer is YES!");
                     startX = (int) event.getX();
                 }
-                final int distance = startX - (int) event.getX();
-//                System.out.println("first we decide the direction");
+                final int distance = (int) event.getX() - startX;
                 if (mDirection == MOVE_NO_RESULT) {
-                    if (mListener.whetherHasNextPage() && distance > 0) {
+                    if (mListener.whetherHasNextPage() && distance < 0) {
                         mDirection = MOVE_TO_LEFT;
-//                        System.out.println("mdirection is move_to_left");
-                    } else if (mListener.whetherHasPreviousPage() && distance < 0) {
+                    } else if (mListener.whetherHasPreviousPage() && distance > 0) {
                         mDirection = MOVE_TO_RIGHT;
-//                        System.out.println("mdirection is move_to_right");
                     }
                 }
 
-//                System.out.println("and then is the mode.");
                 if (mMode == MODE_NONE
                         && ((mDirection == MOVE_TO_LEFT && mListener.whetherHasNextPage()) || (mDirection == MOVE_TO_RIGHT && mListener
                         .whetherHasPreviousPage()))) {
                     mMode = MODE_MOVE;
-//                    System.out.println("mode is mode_move");
                 }
 
-                if (mMode == MODE_MOVE) {
-                    if ((mDirection == MOVE_TO_LEFT && distance <= 0) || (mDirection == MOVE_TO_RIGHT && distance >= 0)) {
-                        mMode = MODE_NONE;
+//                if (mMode == MODE_MOVE) {
+//                    if ((mDirection == MOVE_TO_LEFT && distance >= 0) || (mDirection == MOVE_TO_RIGHT && distance <= 0)) {
+//                        mMode = MODE_NONE;
 //                        System.out.println("mode is mode_none");
-                    }
-                }
+//                    }
+//                }
 
                 if (mDirection != MOVE_NO_RESULT) {
-//                    System.out.println("here we decide which view to scroll");
                     if (mDirection == MOVE_TO_LEFT) {
                         if (mScrollerView != currentShowView) {
                             mScrollerView = currentShowView;
@@ -196,66 +183,58 @@ public class FlipperLayout extends FrameLayout {
                         }
                     }
                     if (mMode == MODE_MOVE) {
-//                        System.out.println("mode is mode_move,so move!");
                         mVelocityTracker.computeCurrentVelocity(1000, ViewConfiguration.getMaximumFlingVelocity());
                         if (mDirection == MOVE_TO_LEFT) {
                             mScrollerView.setTranslationX(distance);
                         } else {
-                            mScrollerView.setTranslationX(screenWidth + distance);
+                            mScrollerView.setTranslationX(distance-screenWidth);
                         }
-                    } else {
-//                        System.out.println("so when mode is not mode_move? and what will we do?");
-                        final int scrollX = mScrollerView.getScrollX();
-                        if (mDirection == MOVE_TO_LEFT && scrollX != 0 && mListener.whetherHasNextPage()) {
-                            mScrollerView.setTranslationX(0);
-                        } else if (mDirection == MOVE_TO_RIGHT && mListener.whetherHasPreviousPage() && screenWidth != Math.abs(scrollX)) {
-                            mScrollerView.setTranslationX(-screenWidth);
-                        }
-
                     }
+//                    else {
+//                        System.out.println("so when mode is not mode_move? and what will we do?");
+//                        final int scrollX = mScrollerView.getScrollX();
+//                        if (mDirection == MOVE_TO_LEFT && scrollX != 0 && mListener.whetherHasNextPage()) {
+//                            mScrollerView.setTranslationX(-screenWidth);
+//                        } else if (mDirection == MOVE_TO_RIGHT && mListener.whetherHasPreviousPage() && screenWidth != Math.abs(scrollX)) {
+//                            mScrollerView.setTranslationX(screenWidth);
+//                        }
+//
+//                    }
                 }
 
                 break;
 
             case MotionEvent.ACTION_UP:
-                Log.i("mandy" ,"action_up :" + mScrollerView);
                 if (mScrollerView == null) {
                     return super.onTouchEvent(event);
                 }
-                final int scrollX = mScrollerView.getScrollX();
-                Log.i("mandy" ,"scrollX :" + scrollX);
+                int durationtime = 300;
+                /**
+                 * 滑动时候
+                 */
+                final int scrollX = (int)mScrollerView.getX();
                 mVelocityValue = (int) mVelocityTracker.getXVelocity();
-                // scroll左正，右负(),(startX + dx)的值如果为0，即复位
-            /*
-             * android.widget.Scroller.startScroll( int startX, int startY, int
-             * dx, int dy, int duration )
-             */
-
-                int time = 500;
+                int time = 100;
 
                 if (mMode == MODE_MOVE && mDirection == MOVE_TO_LEFT) {
-                    if (scrollX > limitDistance || mVelocityValue < -time) {
+                    if (-scrollX > limitDistance && mVelocityValue < -time) {
                         // 手指向左移动，可以翻屏幕
                         mTouchResult = MOVE_TO_LEFT;
-                        if (mVelocityValue < -time) {
-                            time = 200;
-                        }
-                        mScroller.startScroll(scrollX, 0, screenWidth - scrollX, 0, time);
+                        mScroller.startScroll(scrollX, 0, -screenWidth-scrollX, 0, durationtime);
                     } else {
                         mTouchResult = MOVE_NO_RESULT;
-                        mScroller.startScroll(scrollX, 0, -scrollX, 0, time);
+                        mScroller.startScroll(scrollX, 0, 0-scrollX, 0, durationtime);
                     }
-                } else if (mMode == MODE_MOVE && mDirection == MOVE_TO_RIGHT) {
-                    if ((screenWidth - scrollX) > limitDistance || mVelocityValue > time) {
-                        // 手指向右移动，可以翻屏幕
-                        mTouchResult = MOVE_TO_RIGHT;
-                        if (mVelocityValue > time) {
-                            time = 250;
+                } else {
+                    if (mMode == MODE_MOVE && mDirection == MOVE_TO_RIGHT) {
+                    if ((screenWidth + scrollX) > limitDistance && mVelocityValue > time) { //判断距离或者时间
+                            // 手指向右移动，可以翻屏幕
+                            mTouchResult = MOVE_TO_RIGHT;
+                            mScroller.startScroll(scrollX, 0, -scrollX, 0, durationtime);
+                        } else {
+                            mTouchResult = MOVE_NO_RESULT;
+                            mScroller.startScroll(scrollX, 0, -screenWidth - scrollX, 0, durationtime);
                         }
-                        mScroller.startScroll(scrollX, 0, -scrollX, 0, time);
-                    } else {
-                        mTouchResult = MOVE_NO_RESULT;
-                        mScroller.startScroll(scrollX, 0, screenWidth - scrollX, 0, time);
                     }
                 }
                 resetVariables();
@@ -285,7 +264,7 @@ public class FlipperLayout extends FrameLayout {
 
         super.computeScroll();
         if (mScroller.computeScrollOffset()) {
-            mScrollerView.scrollTo(mScroller.getCurrX(), mScroller.getCurrY());
+            mScrollerView.setTranslationX(mScroller.getCurrX());
             postInvalidate();
         } else if (mScroller.isFinished() && mListener != null && mTouchResult != MOVE_NO_RESULT) {
 //            System.out.println("and here computescroll was finished.");
@@ -317,14 +296,14 @@ public class FlipperLayout extends FrameLayout {
                 if (mListener.currentIsFirstPage()) {
                     final View newView = mListener.createView(mTouchResult);
                     currentTopView = newView;
-                    currentTopView.scrollTo(-screenWidth, 0);
+                    currentTopView.setTranslationX(-screenWidth);
                     addView(currentTopView);
                 } else {
                     final View newView = mListener.createView(mTouchResult);
 //                    currentTopView = new View(getContext());
                     currentTopView = newView;
                     Log.i("mandy" ,"currentView :" + newView);
-                    currentTopView.scrollTo(-screenWidth, 0);
+                    currentTopView.setTranslationX(-screenWidth);
 //                    currentTopView.setVisibility(View.GONE);
                     addView(currentTopView);
                 }
@@ -347,6 +326,7 @@ public class FlipperLayout extends FrameLayout {
         }
     }
 
+
     /***
      * 用来实时回调触摸事件回调
      *
@@ -366,7 +346,7 @@ public class FlipperLayout extends FrameLayout {
          *            {@link MOVE_TO_LEFT,MOVE_TO_RIGHT}
          * @return
          */
-        public View createView(final int direction);
+        public View createView(final String direction);
 
         /***
          * 当前页是否是第一页

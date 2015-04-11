@@ -12,7 +12,7 @@ import android.widget.TextView;
 import java.util.Random;
 
 
-public class MainActivity extends Activity implements View.OnTouchListener,FlipperLayout.TouchListener {
+public class MainActivity extends Activity implements FlipperLayout.TouchListener {
     public static int position = 0;
     FlipperLayout rootLayout;
 
@@ -47,13 +47,9 @@ public class MainActivity extends Activity implements View.OnTouchListener,Flipp
 
 
     @Override
-    public View createView(final int direction) {
-//        System.out.println("cteatview:"+position);
-        if (direction == MOVE_TO_LEFT) {
-            position --;
-        } else {
-            position++;
-        }
+    public View createView(final String direction) {
+        position++;
+
         View view = LayoutInflater.from(this).inflate(R.layout.view_new,null);
         TextView textView = (TextView) view.findViewById(R.id.main_textview);
         LinearLayout linearLayout = (LinearLayout)view.findViewById(R.id.newview_linearlayout);
@@ -62,9 +58,8 @@ public class MainActivity extends Activity implements View.OnTouchListener,Flipp
         int g= random.nextInt(256);
         int b = random.nextInt(256);
         int mColor = Color.rgb(r, g, b);
-//        linearLayout.setBackgroundColor(mColor);
+        linearLayout.setBackgroundColor(mColor);
 
-//        System.out.printf("createview-->textview width: %d, height: %d.",textView.getWidth(),textView.getHeight());
         textView.setText("this is "+position+" page.");
         r = random.nextInt(256);
         g= random.nextInt(256);
@@ -78,7 +73,7 @@ public class MainActivity extends Activity implements View.OnTouchListener,Flipp
 
     @Override
     public boolean whetherHasPreviousPage() {
-        return position != 0;
+        return true;
     }
 
     @Override
@@ -88,7 +83,7 @@ public class MainActivity extends Activity implements View.OnTouchListener,Flipp
 
     @Override
     public boolean currentIsFirstPage() {
-        return position == 0;
+        return false;
     }
 
     @Override
@@ -96,9 +91,4 @@ public class MainActivity extends Activity implements View.OnTouchListener,Flipp
         return false;
     }
 
-
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        return false;
-    }
 }
